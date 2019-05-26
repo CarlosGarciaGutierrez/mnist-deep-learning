@@ -1,12 +1,22 @@
-#Veamos un ejemplo concreto de una red neuronal que usa el paquete Keras R para aprender a clasificar los dígitos escritos a mano. El problema que intentamos resolver aquí es clasificar las imágenes en escala de grises de los dígitos escritos a mano (28 píxeles por 28 píxeles) en 10 categorías (números del 0 a 9). Usaremos el conjunto de datos MNIST, que consta de 60,000 imágenes de entrenamiento, más 10,000 imágenes de prueba, reunidas por el Instituto Nacional de Estándares y Tecnología (el NIST en MNIST) en la década de 1980. 
-
-#El conjunto de datos MNIST viene precargado en Keras, en forma de listas `train` y` test`, cada una de las cuales incluye un conjunto de imágenes (`x`) y etiquetas asociadas (` y`):
+#' ---
+#' title: "Métodos Basados en el conocimiento Aplicados a la Empresa - Aprendizaje profundo con MNIST"
+#' author: "Carlos García Gutiérrez (UO139393)"
+#' output: pdf_document
+#' ---
 
 library(keras)
 
+#' Obtenemos el dataset **MNIST**
 mnist <- dataset_mnist()
-train_images <- mnist$train$x
-train_labels <- mnist$train$y
+
+#' Definimos una semilla con los dígitos del DNI y generamos una secuencia aleatoria con un tamaño
+#' de la mitad del de la lista de imágenes/etiquetas
+set.seed(DNI_SEED)
+sample_array <- sample.int(nrow(mnist$train$x), size = floor(.50 * nrow(mnist$train$x)))
+
+#' Obtenemos la mitad de las imágenes/etiquetas para entrenar, el conjunto de test es el completo
+train_images <- mnist$train$x[sample_array,,]
+train_labels <- mnist$train$y[sample_array]
 test_images <- mnist$test$x
 test_labels <- mnist$test$y
 
@@ -79,101 +89,3 @@ network %>% fit(train_images, train_labels, epochs = 5, batch_size = 128)
   
 metrics <- network %>% evaluate(test_images, test_labels, verbose = 0)
 metrics
-
-#Con este pequeño ejemplo puedes observar como contruir y entrenar una red neuronal para clasificar dígitos escritos a mano en menos de 20 líneas de código. 
-
-
-#Las redes neuronales convolucionales han tenido mucho éxito porque trabajan muy bien con imágenes. 
-#En general, las redes neuronales convolucionales van a estar construidas con una estructura que contendrá 3 tipos distintos de capas:
-  
-
-#* Una capa convolucional, que es la que le da le nombre a la red.
-#* Una capa de reducción o de pooling, la cual va a reducir la cantidad de parámetros al quedarse con las características más comunes.
-#* Una capa clasificadora totalmente conectada, la cual nos va dar el resultado final de la red.
-
-#Las redes neuronales convolucionales se distinguen de cualquier otra red neuronal en que utilizan un operación llamada convolución en alguna de sus capas en lugar de utilizar la multiplicación de matrices que se aplica generalmente. La operación de convolución recibe como entrada una imagen a la que aplica un filtro que devuelve un mapa de las características de la imagen original, reduciendo así el número de parámetros. La convolución se basa en las siguientes cuestiones:
-  
-#* Interacciones dispersas, ya que al aplicar un filtro de menor tamaño sobre la entrada original podemos reducir drásticamente la cantidad de parámetros y cálculos.
-#* Parámetros compartidos entre los distintos tipos de filtros.
-#* Si las entradas cambian, las salidas van a cambiar también en forma similar.
-
-#Después de la capa convolucional, esta capa reduce en la dimensión que aunque puede conducir a una pérdida de información, también reduce los cáclulos y con ello evita el sobreajuste.
-
-#La operación que se suele utilizar en esta capa es `max-pooling`, que divide a la imagen de entrada en un conjunto de rectángulos y, respecto de cada subregión, se va quedando con el máximo valor.
-
-#Vamos a resolver ahora el mismo problema de identificación de dígitos. Recuerda que con una red neuronal densa obtenemos un porcentaje de acierto del 97.8%. 
-
-#Vamos ahora a construir una red neuronal convolucional básica. Utilizaremos las capas `layer_conv_2d()` y `layer_max_pooling_2d()`. 
-
-#La red neuronal convolucional recibe como entrada tensores con la siguiente forma `(altura_imagen, ancho_imagen, canal_imagen)`. Así configruramos la red neuronal convolucional para procesar entradas de tamaño `(28, 28, 1)`. Por tanto en la primera capa  `input_shape = c(28, 28, 1)` .
-
-library(keras)
-
-model <- keras_model_sequential() %>% 
-  layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = "relu",
-                input_shape = c(28, 28, 1)) %>% 
-  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
-  layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = "relu") %>% 
-  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
-  layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = "relu")
-
-#Veamos la arquitectura de la red.
-
-summary(model)
-
-#Para calcular el número de parámetros tenemos que aplicar la fórmula:
-  
-# total.params = (altura.filtro * ancho.filtro * numero.canales+1) * numero.filtros
-
-  
-#  El número de canales en una imagen en escala de grises es $1$, para una imagen a color, sería $3$, una por cada canal RGB.
-
-#Así el número de parámetros de la primera capa es $(3*3*1+1)*32$ y el de la segunda $((3*3*32)+1)*64$. Fíjate que cada filtro de la primera capa se transforma en un canal de la segunda.
-
-#La salida de `layer_conv_2d()` y `layer_max_pooling_2d()` es un 3D tensor de forma `(altura, ancho, canal)`. El ancho y la altura se reducen según se profundiza en la red. El número de canales se controla por el primer argumento que se pasa a `layer_conv_2d()` (32 o 64).
-
-#El siguiente paso es alimentar la última capa (de tamaño `(3, 3, 64)`) en una red densa, pero como estas redes procesan 1D tensores, se deben transformar las salidas 3D en salidas 1D.
-
-model <- model %>% 
-  layer_flatten() %>% 
-  layer_dense(units = 64, activation = "relu") %>% 
-  layer_dense(units = 10, activation = "softmax")
-
-#La última capa tiene 10 neuronas porque el objetivo es realizar multicategoría, con 10 categorías.
-
-summary(model)
-
-#Es decir, cada salida con forma `(3, 3, 64)` se transforma en un vector de tamaño `(576)` antes de aplicar 2 capas densas.
-
-#Finalmente vamos a realizar el entrenamiento.
-
-mnist <- dataset_mnist()
-c(c(train_images, train_labels), c(test_images, test_labels)) %<-% mnist
-
-train_images <- array_reshape(train_images, c(60000, 28, 28, 1))
-train_images <- train_images / 255
-
-test_images <- array_reshape(test_images, c(10000, 28, 28, 1))
-test_images <- test_images / 255
-
-train_labels <- to_categorical(train_labels)
-test_labels <- to_categorical(test_labels)
-
-model %>% compile(
-  optimizer = "rmsprop",
-  loss = "categorical_crossentropy",
-  metrics = c("accuracy")
-)
-
-model %>% fit(
-  train_images, train_labels, 
-  epochs = 5, batch_size=64
-)
-
-#Vamos a evaluar ahora el modelo construido.
-
-results <- model %>% evaluate(test_images, test_labels)
-
-results
-
-#Como podemos observar pasamos de un porcentaje de acierto de 97.8% al 99%.
