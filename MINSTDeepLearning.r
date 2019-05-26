@@ -1,18 +1,30 @@
 #' ---
-#' title: "Métodos Basados en el conocimiento Aplicados a la Empresa - Aprendizaje profundo con MNIST"
+#' title: "Resolución de un problema de clasificación con aprendizaje profundo utilizando un subconjunto del conjunto MNIST"
 #' author: "Carlos García Gutiérrez (UO139393)"
+#' date:
 #' output: pdf_document
 #' ---
 
+#' **Introducción**
+#'
+#' La ejecución de esta práctica consta de tres partes:  
+#' - Cargar en memoria los datos a utilizar  
+#' - Crear, entrenar y comparar los resultados de varias configuraciones de redes densas  
+#' - Crear, entrenar y comparar los resultados de varias configuraciones de redes convolucionales  
+
+#'
+#' **Carga de datos en memoria**
+
 library(keras)
 
-#' Obtenemos el dataset **MNIST**
+#' Obtenemos el dataset MNIST
 mnist <- dataset_mnist()
 
 #' Definimos una semilla con los dígitos del DNI y generamos una secuencia aleatoria con un tamaño
 #' de la mitad del de la lista de imágenes/etiquetas
-set.seed(DNI_SEED)
-sample_array <- sample.int(nrow(mnist$train$x), size = floor(.50 * nrow(mnist$train$x)))
+set.seed(53540153)
+sample_array <- sample.int(nrow(mnist$train$x), size = floor(.10 * nrow(mnist$train$x)))
+#PONER AL 50% ANTES DE ENTREGAR!!!
 
 #' Obtenemos la mitad de las imágenes/etiquetas para entrenar, el conjunto de test es el completo
 train_images <- mnist$train$x[sample_array,,]
@@ -68,11 +80,11 @@ network %>% compile(
 #Antes de entrenar, reconfiguramos los datos a la forma que la red espera y __escalamos para que todos los valores estén en el intervalo__ `[0, 1]`. Anteriormente, nuestras imágenes de entrenamiento, por ejemplo, se almacenaban en una matriz de forma `(60000, 28, 28)` de tipo entero con valores en el intervalo `[0, 255]`. Lo transformamos matriz de orden `(60000, 28 * 28)` con valores entre 0 y 1.
 
 
-train_images <- array_reshape(train_images, c(60000, 28 * 28))
+train_images <- array_reshape(train_images, c(nrow(train_images), 28 * 28))
 train_images <- train_images / 255
 
 #El conjunto de entrenamiento está almacenado en un 2-tensor (una matriz) de dimensión (60000, 784) 
-test_images <- array_reshape(test_images, c(10000, 28 * 28))
+test_images <- array_reshape(test_images, c(nrow(test_images), 28 * 28))
 test_images <- test_images / 255
 
 train_labels <- to_categorical(train_labels)
