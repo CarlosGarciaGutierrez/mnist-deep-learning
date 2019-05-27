@@ -9,9 +9,9 @@
 #'
 #' La ejecución de esta práctica consta de las siguientes partes:  
 #' - Cargar en memoria los datos a utilizar  
-#' - Crear, entrenar y comparar los resultados de varias configuraciones de redes densas
+#' - Modelar y entrenar varias configuraciones de redes densas
 #' - Añadir regularización a las redes anteriores y comparar los resultados 
-#' - Crear, entrenar y comparar los resultados de varias configuraciones de redes convolucionales  
+#' - Modelar y entrenar varias configuraciones de redes convolucionales  
 
 #'  
 #' **Carga de datos en memoria**
@@ -26,8 +26,7 @@ mnist <- dataset_mnist()
 #' Definimos una semilla con los dígitos del DNI y generamos una secuencia aleatoria con un tamaño
 #' de la mitad del de la lista de imágenes/etiquetas
 set.seed(53540153)
-sample_array <- sample.int(nrow(mnist$train$x), size = floor(.10 * nrow(mnist$train$x)))
-#PONER AL 50% ANTES DE ENTREGAR!!!
+sample_array <- sample.int(nrow(mnist$train$x), size = floor(.50 * nrow(mnist$train$x)))
 
 #' Obtenemos la mitad de las imágenes/etiquetas para entrenar; el conjunto de test es el completo
 train_images <- mnist$train$x[sample_array,,]
