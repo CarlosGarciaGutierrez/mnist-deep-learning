@@ -17,6 +17,8 @@
 #' **Carga de datos en memoria**
 
 library(keras)
+library(ggplot2)
+library(tidyr)
 
 #' Obtenemos el dataset MNIST
 mnist <- dataset_mnist()
@@ -114,12 +116,12 @@ dense_network_4layers %>% fit(train_images, train_labels, epochs = 5, batch_size
 
 #' Se obtienen y se muestran los resultados
   
-metrics_dn_2_layers <- dense_network_2layers %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_3_layers <- dense_network_3layers %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_4_layers <- dense_network_4layers %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_2_layers
-metrics_dn_3_layers
-metrics_dn_4_layers
+metrics_dn_2layers <- dense_network_2layers %>% evaluate(test_images, test_labels, verbose = 0)
+metrics_dn_3layers <- dense_network_3layers %>% evaluate(test_images, test_labels, verbose = 0)
+metrics_dn_4layers <- dense_network_4layers %>% evaluate(test_images, test_labels, verbose = 0)
+metrics_dn_2layers
+metrics_dn_3layers
+metrics_dn_4layers
 
 #' Se puede observar que añadir una capa oculta a la red mejora los resultados, pero añadir una segunda  
 #' capa oculta los vuelve a empeorar; esto era de esperar ya que las redes más profundas producen un  
@@ -145,11 +147,6 @@ metrics_dn_4_layers
 #' presentaba y será la que mjor nos sirva para ilustrar la regularización.
 
 #'  
-#' Antes de empezar, vamos a entrenar otras 15 iteraciones a la red neuronal de cuatro capas, para  
-#' para forzar aún más el sobreajuste y poder comparar mejor los efectos de la regularización
-
-dense_network_4layers %>% fit(train_images, train_labels, epochs = 20, batch_size = 128, initial_epoch = 5)
-
 #' Empezamos añadiendo regularización de la norma L1 de los pesos
 
 dense_network_4layers_regL1 <- keras_model_sequential() %>% 
@@ -182,7 +179,7 @@ dense_network_4layers_regL2 %>% compile(
 
 summary(dense_network_4layers_regL2)
 
-#' Finalmente utilizamos un dropout del 50% de cada capa
+#' Finalmente utilizamos un dropout (del 50% de cada capa)
 
 dense_network_4layers_dropout <- keras_model_sequential() %>% 
   layer_dense(units = 512, activation = "relu", input_shape = c(28 * 28)) %>%
@@ -201,36 +198,47 @@ dense_network_4layers_dropout %>% compile(
 
 summary(dense_network_4layers_dropout)
 
-#' Se realiza el entrenamiento de las redes (utilizando 20 iteraciones)
+#' Antes de continuar, vamos a entrenar otras 5 iteraciones a la red neuronal de cuatro capas, para  
+#' para forzar aún más el sobreajuste y poder comparar mejor los efectos de la regularización
 
-dense_network_4layers_regL1 %>% fit(train_images, train_labels, epochs = 20, batch_size = 128)
-dense_network_4layers_regL2 %>% fit(train_images, train_labels, epochs = 20, batch_size = 128)
-dense_network_4layers_dropout %>% fit(train_images, train_labels, epochs = 20, batch_size = 128)
+dense_network_4layers_hist <- dense_network_4layers %>% 
+  fit(train_images, train_labels, epochs = 10, batch_size = 128, initial_epoch = 5)
+
+#' Se realiza el entrenamiento de las redes (utilizando 10 iteraciones)
+
+dense_network_4layers_regL1_hist <- dense_network_4layers_regL1 %>%
+  fit(train_images, train_labels, epochs = 10, batch_size = 128)
+dense_network_4layers_regL2_hist <- dense_network_4layers_regL2 %>%
+  fit(train_images, train_labels, epochs = 10, batch_size = 128)
+dense_network_4layers_dropout_hist <- dense_network_4layers_dropout %>%
+  fit(train_images, train_labels, epochs = 10, batch_size = 128)
 
 #' Se obtienen y se muestran los resultados
 
-metrics_dn_4_layers_L1 <- dense_network_4layers_regL1 %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_4_layers_L2 <- dense_network_4layers_regL2 %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_4_layers_dropout <- dense_network_4layers_dropout %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_4_layers_L1
-metrics_dn_4_layers_L2
-metrics_dn_4_layers_dropout
+metrics_dn_4layers <- dense_network_4layers %>% evaluate(test_images, test_labels, verbose = 0)
+metrics_dn_4layers_L1 <- dense_network_4layers_regL1 %>% evaluate(test_images, test_labels, verbose = 0)
+metrics_dn_4layers_L2 <- dense_network_4layers_regL2 %>% evaluate(test_images, test_labels, verbose = 0)
+metrics_dn_4layers_dropout <- dense_network_4layers_dropout %>% evaluate(test_images, test_labels, verbose = 0)
+metrics_dn_4layers
+metrics_dn_4layers_L1
+metrics_dn_4layers_L2
+metrics_dn_4layers_dropout
 
-library(ggplot2)
-library(tidyr)
+#' Como se puede observar en los resultados el sobreajuste únicamente mejora con la regularización que utiliza  
+#' "dropout", pero no con las de las normas de los pesos. Una interpretación plausible podría ser que los pesos  
+#' de la red ya eran pequeños antes de introducir la regularización y que, por otro lado, existe ruido en los  
+#' los datos de origen y, gracias al "dropout", se evita que el modelo sobreajuste al no tener en cuenta dicho   
+#' ruido.  
+#'   
+#' **NOTA**: lo ideal hubisese sido mostrar una gráfica con la evulucion de la función de pérdida a lo largo  
+#' de las iteraciones, para cada uno de los cuatros modelos, en vez de mostrar en texto los resultados finales  
+#' de la última iteración. Sin embargo, no me ha sido posible mostar ningún gráfico en mi ordenador, ya que cada  
+#' vez que se intentaba lanzar uno RStudio empezaba a consumir memoria y tras un par de minutos acababa quedándose  
+#' bloqueado, haciendo necesario finalizar el proceso manualmente. No he sido capaz de solucionar dicho problema.
 
-plot_training_losses <- function(losses) {
-  loss_names <- names(losses)
-  losses <- as.data.frame(losses)
-  losses$epoch <- seq_len(nrow(losses))
-  losses %>% 
-    gather(model, loss, loss_names[[1]], loss_names[[2]]) %>% 
-    ggplot(aes(x = epoch, y = loss, colour = model)) +
-    geom_point()
-}
+ 
+#'  
+#' **Redes convolucionales**
 
-plot_training_losses(losses = list(
-  nn4_layers = dense_network_4layers$metrics$val_loss,
-  nn_4layers_regL1 = dense_network_4layers_regL1$metrics$val_loss
-))
-
+#'   
+#' La regularización es una técnica que intenta mitigar el sobreajuste de las redes n
