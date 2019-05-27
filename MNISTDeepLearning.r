@@ -240,5 +240,20 @@ metrics_dn_4layers_dropout
 #'  
 #' **Redes convolucionales**
 
-#'   
-#' La regularización es una técnica que intenta mitigar el sobreajuste de las redes n
+#'  
+#' Empezamos creando la red convolucional. Debemos asegurarnos de que reciba como entrada tensores de tamaño  
+#' 28x28x1 y de que la salida tenga 10 neuronasas ()
+#'
+
+model <- keras_model_sequential() %>% 
+  layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = "relu", input_shape = c(28, 28, 1)) %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = "relu") %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = "relu")
+  layer_flatten() %>% 
+  layer_dense(units = 64, activation = "relu") %>% 
+  layer_dense(units = 10, activation = "softmax")
+#Veamos la arquitectura de la red.
+
+summary(model)
