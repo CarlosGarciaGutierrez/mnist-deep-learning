@@ -35,9 +35,9 @@ train_labels <- mnist$train$y[sample_array]
 test_images <- mnist$test$x
 test_labels <- mnist$test$y
 
-#' Se reordenan los datos para poder ser usados como entrada de las redes neuronales y se escalan los 
-#' valores RGB de las imágenes para que estén en el intervalo [0, 1], asimismo se transforman los  
-#' las etiquetas a valores binarios, según el dígito que representen
+#' Se reordenan los datos para poder ser usados como entrada de las redes densas y se escalan los valores  
+#' RGB de las imágenes para que estén en el intervalo [0, 1], asimismo se transforman las etiquetas a     
+#' valores binarios, según el dígito que representen
 
 train_images <- array_reshape(train_images, c(nrow(train_images), 28 * 28))
 train_images <- train_images / 255
@@ -116,9 +116,9 @@ dense_network_4layers %>% fit(train_images, train_labels, epochs = 5, batch_size
 
 #' Se obtienen y se muestran los resultados
   
-metrics_dn_2layers <- dense_network_2layers %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_3layers <- dense_network_3layers %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_4layers <- dense_network_4layers %>% evaluate(test_images, test_labels, verbose = 0)
+metrics_dn_2layers <- dense_network_2layers %>% evaluate(test_images, test_labels)
+metrics_dn_3layers <- dense_network_3layers %>% evaluate(test_images, test_labels)
+metrics_dn_4layers <- dense_network_4layers %>% evaluate(test_images, test_labels)
 metrics_dn_2layers
 metrics_dn_3layers
 metrics_dn_4layers
@@ -215,10 +215,10 @@ dense_network_4layers_dropout_hist <- dense_network_4layers_dropout %>%
 
 #' Se obtienen y se muestran los resultados
 
-metrics_dn_4layers <- dense_network_4layers %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_4layers_L1 <- dense_network_4layers_regL1 %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_4layers_L2 <- dense_network_4layers_regL2 %>% evaluate(test_images, test_labels, verbose = 0)
-metrics_dn_4layers_dropout <- dense_network_4layers_dropout %>% evaluate(test_images, test_labels, verbose = 0)
+metrics_dn_4layers <- dense_network_4layers %>% evaluate(test_images, test_labels)
+metrics_dn_4layers_L1 <- dense_network_4layers_regL1 %>% evaluate(test_images, test_labels)
+metrics_dn_4layers_L2 <- dense_network_4layers_regL2 %>% evaluate(test_images, test_labels)
+metrics_dn_4layers_dropout <- dense_network_4layers_dropout %>% evaluate(test_images, test_labels)
 metrics_dn_4layers
 metrics_dn_4layers_L1
 metrics_dn_4layers_L2
@@ -241,19 +241,202 @@ metrics_dn_4layers_dropout
 #' **Redes convolucionales**
 
 #'  
-#' Empezamos creando la red convolucional. Debemos asegurarnos de que reciba como entrada tensores de tamaño  
-#' 28x28x1 y de que la salida tenga 10 neuronasas ()
-#'
+#' Empezamos creando las redes convolucionales. Debemos asegurarnos de que reciba como entrada tensores de  
+#' tamaño 28x28x1 y de que la salida tenga 10 neuronas (una por cada categoría/dígito). El tamaño del  
+#' "pooling", de los "kernels" y el número de filtros varían entre cada uno de los ejemplos.
 
-model <- keras_model_sequential() %>% 
-  layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = "relu", input_shape = c(28, 28, 1)) %>% 
+conv_network_a <- keras_model_sequential() %>% 
+  layer_conv_2d(filters = 32, kernel_size = c(2, 2), activation = "relu", input_shape = c(28, 28, 1)) %>% 
   layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
-  layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = "relu") %>% 
+  layer_conv_2d(filters = 32, kernel_size = c(2, 2), activation = "relu") %>% 
   layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
-  layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = "relu")
+  layer_conv_2d(filters = 32, kernel_size = c(2, 2), activation = "relu") %>%
+  layer_flatten() %>% 
+  layer_dense(units = 32, activation = "relu") %>% 
+  layer_dense(units = 10, activation = "softmax")
+
+conv_network_a %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+summary(conv_network_a)
+
+conv_network_b <- keras_model_sequential() %>% 
+  layer_conv_2d(filters = 32, kernel_size = c(2, 2), activation = "relu", input_shape = c(28, 28, 1)) %>% 
+  layer_max_pooling_2d(pool_size = c(3, 3)) %>% 
+  layer_conv_2d(filters = 64, kernel_size = c(2, 2), activation = "relu") %>% 
+  layer_max_pooling_2d(pool_size = c(3, 3)) %>% 
+  layer_conv_2d(filters = 64, kernel_size = c(2, 2), activation = "relu") %>%
   layer_flatten() %>% 
   layer_dense(units = 64, activation = "relu") %>% 
   layer_dense(units = 10, activation = "softmax")
-#Veamos la arquitectura de la red.
 
-summary(model)
+conv_network_b %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+summary(conv_network_b)
+
+conv_network_c <- keras_model_sequential() %>% 
+  layer_conv_2d(filters = 32, kernel_size = c(4, 4), activation = "relu", input_shape = c(28, 28, 1)) %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d(filters = 128, kernel_size = c(4, 4), activation = "relu") %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d(filters = 128, kernel_size = c(4, 4), activation = "relu") %>%
+  layer_flatten() %>% 
+  layer_dense(units = 128, activation = "relu") %>% 
+  layer_dense(units = 10, activation = "softmax")
+
+conv_network_c %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+summary(conv_network_c)
+
+#' Obtenemos de nuevo las imágenes/etiquetas de entrenamiento y de test
+train_images <- mnist$train$x[sample_array,,]
+test_images <- mnist$test$x
+
+#' Se reordenan los datos para poder ser usados como entrada de las redes convolucionales y se escalan los 
+#' valores RGB de las imágenes para que estén en el intervalo [0, 1]
+
+train_images <- array_reshape(train_images, c(nrow(train_images), 28, 28, 1))
+train_images <- train_images / 255
+test_images <- array_reshape(test_images, c(nrow(test_images), 28, 28, 1))
+test_images <- test_images / 255
+
+#' Se realiza el entrenamiento de las redes
+
+conv_network_a %>% fit(train_images, train_labels, epochs = 5, batch_size = 64)
+conv_network_b %>% fit(train_images, train_labels, epochs = 5, batch_size = 64)
+conv_network_c %>% fit(train_images, train_labels, epochs = 5, batch_size = 64)
+
+#' Se obtienen y se muestran los resultados
+
+metrics_cn_a <- conv_network_a %>% evaluate(test_images, test_labels)
+metrics_cn_b <- conv_network_b %>% evaluate(test_images, test_labels)
+metrics_cn_c <- conv_network_c %>% evaluate(test_images, test_labels)
+
+metrics_cn_a
+metrics_cn_b
+metrics_cn_c
+
+#' Se puede observar como resultado que los peores resultados se obtienen en red convolucional B. Esto era  
+#' esperable ya que la combinación del tamaño de kernel y de operadores de pooling no es la adecuada. Los  
+#' mejores resultados se obtienen con la red convolucional C, probablemente debiso a su número de filtros,  
+#' pero a costa de un notabilísimo coste computacional.
+
+#'  
+#' Partiremos ahora la red convolucional A para realizar las combinaciones de capas de de convolución y de  
+#' pooling que se solicitan. Podría partirse también de la red convolucional C, y muy probablemente se  
+#' obtendrían mejores resultados, pero el coste computacional sería elevadísimo. La red convolucional A  
+#' es una elección más equilibrada.
+
+#'  
+#' Primera combinación: capa convolucional transpuesta 2D y capa de max_pooling 1D  
+
+#conv_network_a1 <- keras_model_sequential() %>% 
+#  layer_conv_2d_transpose(filters = 32, kernel_size = c(2, 2), activation = "relu", input_shape = c(28, 28, 1)) %>% 
+#  layer_max_pooling_1d(pool_size = 2) %>% 
+#  layer_conv_2d_transpose(filters = 32, kernel_size = c(2, 2), activation = "relu") %>% 
+#  layer_max_pooling_1d(pool_size = 2) %>% 
+#  layer_conv_2d_transpose(filters = 32, kernel_size = c(2, 2), activation = "relu") %>%
+#  layer_flatten() %>% 
+#  layer_dense(units = 32, activation = "relu") %>% 
+#  layer_dense(units = 10, activation = "softmax")
+
+#'  
+#' El resultado es que no se puede realizar pooling 1D sobre el resultado de una capaz de mayor dimensión  
+
+#'  
+#' Segunda combinación: capa convolucional transpuesta 2D y capa de max_pooling 2D
+
+conv_network_a2 <- keras_model_sequential() %>% 
+  layer_conv_2d_transpose(filters = 32, kernel_size = c(2, 2), activation = "relu", input_shape = c(28, 28, 1)) %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d_transpose(filters = 32, kernel_size = c(2, 2), activation = "relu") %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d_transpose(filters = 32, kernel_size = c(2, 2), activation = "relu") %>%
+  layer_flatten() %>% 
+  layer_dense(units = 32, activation = "relu") %>% 
+  layer_dense(units = 10, activation = "softmax")
+
+conv_network_a2 %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+summary(conv_network_a2)
+
+#' El resultado del entrenamiento y la evaluación se muestra a contionuación
+
+conv_network_a2 %>% fit(train_images, train_labels, epochs = 5, batch_size = 64)
+metrics_cn_a2 <- conv_network_c %>% evaluate(test_images, test_labels)
+metrics_cn_a2
+
+#'  
+#' Tercera combinación: capa convolucional transpuesta 2D y capa de average_pooling 2D
+
+conv_network_a3 <- keras_model_sequential() %>% 
+  layer_conv_2d_transpose(filters = 32, kernel_size = c(2, 2), activation = "relu", input_shape = c(28, 28, 1)) %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d_transpose(filters = 32, kernel_size = c(2, 2), activation = "relu") %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d_transpose(filters = 32, kernel_size = c(2, 2), activation = "relu") %>%
+  layer_flatten() %>% 
+  layer_dense(units = 32, activation = "relu") %>% 
+  layer_dense(units = 10, activation = "softmax")
+
+conv_network_a3 %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+summary(conv_network_a3)
+
+#' El resultado se muestra a continuación del entrenamiento y la evaluación se muestra a contionuación
+
+conv_network_a3 %>% fit(train_images, train_labels, epochs = 5, batch_size = 64)
+metrics_cn_a3 <- conv_network_c %>% evaluate(test_images, test_labels)
+metrics_cn_a3
+
+#'  
+#' Cuarta combinación: capa convolucional 3D y capa de max_pooling 2D
+
+#conv_network_a4 <- keras_model_sequential() %>% 
+#  layer_conv_3d(filters = 32, kernel_size = c(2, 2, 2), activation = "relu", input_shape = c(28, 28, 1)) %>% 
+#  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+#  layer_conv_3d_transpose(filters = 32, kernel_size = c(2, 2, 2), activation = "relu") %>% 
+#  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+#  layer_conv_3d_transpose(filters = 32, kernel_size = c(2, 2, 2), activation = "relu") %>%
+#  layer_flatten() %>% 
+#  layer_dense(units = 32, activation = "relu") %>% 
+#  layer_dense(units = 10, activation = "softmax")
+
+#'  
+#' El resultado es que la capa de entrada no puede ser de dimensión mayor que la dimensión de los datos  
+
+#'  
+#' Quinta combinación: capa convolucional 2D y capa de global_max_pooling 2D
+
+#conv_network_a5 <- keras_model_sequential() %>% 
+#  layer_conv_2d(filters = 32, kernel_size = c(2, 2), activation = "relu", input_shape = c(28, 28, 1)) %>% 
+#  layer_global_max_pooling_2d() %>% 
+#  layer_conv_2d(filters = 32, kernel_size = c(2, 2), activation = "relu") %>% 
+#  layer_global_max_pooling_2d() %>% 
+#  layer_conv_2d(filters = 32, kernel_size = c(2, 2), activation = "relu") %>%
+#  layer_flatten() %>% 
+#  layer_dense(units = 32, activation = "relu") %>% 
+#  layer_dense(units = 10, activation = "softmax")
+
+#'  
+#' El resultado es que la capa pooling global devuelve una salida de dimensión menor a la necesaria por la  
+#' siguiente capa convolucional  
